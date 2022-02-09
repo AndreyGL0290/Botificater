@@ -1,0 +1,14 @@
+aiogram
+DateTime
+uuid
+pysqlite3
+pymorphy2
+pytrovich
+comtypes
+python-pptx
+ujson
+cchardet
+aiodns
+aiohttp[speedups]
+aiofiles
+asgiref
