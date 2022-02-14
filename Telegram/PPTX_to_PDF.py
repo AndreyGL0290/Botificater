@@ -8,7 +8,7 @@ def init_powerpoint():
     powerpoint.Visible = 1
     return powerpoint
  
-def ppt_to_pdf(powerpoint, inputFileName, outputFileName, formatType = 32):
+def convert(powerpoint, inputFileName, outputFileName, formatType = 32):
     if outputFileName[-3:] != 'pdf':
         outputFileName = outputFileName.replace(".pptx","").replace(".ppt","").replace("GENERATED_PPTX","GENERATED_PDF") + ".pdf"
     deck = powerpoint.Presentations.Open(inputFileName)
@@ -16,8 +16,8 @@ def ppt_to_pdf(powerpoint, inputFileName, outputFileName, formatType = 32):
     deck.Close()
     #print('convert %s file complete '%outputFileName)
 
-def main(file_name, today_date):
+def pptx_to_pdf(file_name, today_date):
     powerpoint = init_powerpoint()  # инициализируем процесс PowerPoint (работает ТОЛЬКО в Windows)
     cwd = os.getcwd() + "\GENERATED_PPTX\\"+ today_date +"\\"+ file_name + ".pptx"  # создаём полный путь до файла 
-    ppt_to_pdf(powerpoint, cwd, cwd)  # запуск конвертации 
+    convert(powerpoint, cwd, cwd)  # запуск конвертации 
     powerpoint.Quit()  

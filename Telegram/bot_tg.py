@@ -13,7 +13,7 @@ import os
 from settings import TOKEN
 #
 from PPTX_GENERATOR import PPTX_GENERATOR
-from PPTX_to_PDF import main
+from PPTX_to_PDF import pptx_to_pdf
 # БД sqlite (рекомендую DB Browser) 
 import sqlite3
 from sqlite3.dbapi2 import Cursor
@@ -65,11 +65,11 @@ async def main_function(message: types.Message):
 	
 	#  "генийальный" анти DDoS
 	can_receive_message = 1
-	if message.from_user.id not in mess: #Если пользователь не писал ещё сообщения, то добавляем его ID в словарь и присваиваем время
-		mess[message.from_user.id] = datetime.datetime.now()
-	elif (datetime.datetime.now() - mess[message.from_user.id]).total_seconds() < 15:  # Ставим ограничения на время последовательных сообщений боту
-		await message.answer('Мне можно писать не чаще чем раз в 15 секунд\nಥ_ಥ\nТебе придётся подождать')
-		can_receive_message = 0
+	# if message.from_user.id not in mess: #Если пользователь не писал ещё сообщения, то добавляем его ID в словарь и присваиваем время
+	# 	mess[message.from_user.id] = datetime.datetime.now()
+	# elif (datetime.datetime.now() - mess[message.from_user.id]).total_seconds() < 15:  # Ставим ограничения на время последовательных сообщений боту
+	# 	await message.answer('Мне можно писать не чаще чем раз в 15 секунд\nಥ_ಥ\nТебе придётся подождать')
+	# 	can_receive_message = 0
 	if can_receive_message:
 		mess[message.from_user.id] = datetime.datetime.now()  # обновляем время последнего обращения от пользователя
 		await message.answer("Твой сертификат создаётся, подожди немного")
@@ -82,15 +82,12 @@ async def main_function(message: types.Message):
 
 		file = await sync_to_async(PPTX_GENERATOR)(user_name, UID, today_date)  # формирование pptx документа из шаблона (ФИО, ID, дата)
 		# file - ФИО+ID:  Кастрюлев Евлампий Спиридонович_ID 
-		file = file.replace(" ", "©")  # для передачи ФИО через аргументы командной строки, пробелы заменяются на спец.символы, чтобы ФИО было "единым целым"
-		command = "python PPTX_to_PDF.py " + file + " " + today_date  # формирование команды для запуска "отдельного" скрипта 
-		res = await sync_to_async(os.system)(command)  # открываем скрипт для конвертации PPTX в PDF	
-		file = file.replace("©", " ")  # возвращаем пробелы
-		main(file, today_date)
+		pptx_to_pdf(file, today_date)
 		doc = open('./GENERATED_PDF/' + today_date + '/' + file + ".pdf", 'rb')  # берём файл
 		await message.reply_document(doc)  # и отправляем его пользователю
+
 		# работа с SQLLite
-		connect = sqlite3.connect('../BD/users.db')
+		connect = sqlite3.connect('users.db')
 		cursor = connect.cursor()
 		cursor.execute("""CREATE TABLE IF NOT EXISTS users(
 				user_id TEXT PRIMARY KEY,
@@ -102,6 +99,7 @@ async def main_function(message: types.Message):
 				uid_source TEXT
 				)
 				""")	
+
 		now_time = datetime.datetime.now()
 		users_list = [UID, user_name, today_date, now_time.strftime("%H:%M:%S"), "Telegram", message.from_user.username, message.from_user.id]
 		cursor.execute("INSERT INTO users VALUES(?,?,?,?,?,?,?);", users_list)

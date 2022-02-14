@@ -1,4 +1,4 @@
-# В файле settings.py хранятся переменные
+﻿# В файле settings.py хранятся переменные
 # VK_TOKEN и WEATHER_TOKEN
 settings.py
 
