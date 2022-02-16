@@ -4,7 +4,6 @@ from pytrovich.maker import PetrovichDeclinationMaker
 
 def name_change(name, case='dative'):
     # Нужно для свободного выбора падежа
-    print("name: ", name)
     all_cases = {
     'genetive': Case.GENITIVE, 
     'accusative': Case.ACCUSATIVE, 
