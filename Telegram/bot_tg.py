@@ -56,7 +56,6 @@ template_message_start = Template("Привет, $name!\n👋🏼😀\nЯ Ква
 # Создаем класс с возможными состояниями
 class Form(StatesGroup):
 	waiting_for_your_name = State()
-	waiting_for_your_correct_name = State()
 
 @dp.message_handler(commands=['start', 'help', 'начать', 'сертификат'])
 async def send_welcome(message: types.Message):
@@ -70,14 +69,21 @@ async def send_welcome(message: types.Message):
 	await message.reply(message_start, reply_markup=keyboard)
 
 @dp.message_handler(Text(equals="Хочу сертификат"))
-async def certificate(message: types.Message):
+async def certificate(message: types.Message, state: FSMContext):
 	await message.answer("Напиши мне свои ФИО", reply_markup=keyboard)
+	await state.update_data(cased=False)
 	await Form.waiting_for_your_name.set()
 
 # Отреагирует на введенное ФИО пользователя
 @dp.message_handler(state=Form.waiting_for_your_name)
 async def enter_your_name(message: types.Message, state: FSMContext):
-	cased_user_name = name_change(message.text)
+	cased_user_name = message.text
+	# Если имя человека просклонялось неправильно и он нажал НЕТ
+	data = await state.get_data()
+	is_cased = data['cased']
+	if not is_cased:
+		cased_user_name = name_change(message.text)
+	
 	# Заносим склоненное имя в переменную этого состояния
 	await state.update_data(name=cased_user_name)
 	inline_btn_yes = InlineKeyboardButton('Да', callback_data='Да')
@@ -94,15 +100,11 @@ async def user_answered_yes(callback_query: types.CallbackQuery, state: FSMConte
 
 # Если человек скажет, что фамилия просклонялась не правильно
 @dp.callback_query_handler(lambda c: c.data == "Нет", state=Form.waiting_for_your_name)
-async def user_answered_no(callback_query: types.CallbackQuery):
+async def user_answered_no(callback_query: types.CallbackQuery, state: FSMContext):
 	await bot.answer_callback_query(callback_query.id)
 	await bot.send_message(callback_query.from_user.id, "Как будет правильно?")
-	await Form.next()
-	
-@dp.message_handler(state=Form.waiting_for_your_correct_name)
-async def ask_for_correctly_cased_name(message: types.Message, state: FSMContext):
-	await state.reset_data()
-	await main_algorithm(state, message)
+	await state.update_data(cased=True)
+	await Form.waiting_for_your_name.set()
 
 async def main_algorithm(state, instance):
 	# Если перешли в алгоритм из ветки ДА
