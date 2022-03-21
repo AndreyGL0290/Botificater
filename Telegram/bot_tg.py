@@ -56,6 +56,7 @@ template_message_start = Template("Привет, $name!\n👋🏼😀\nЯ Ква
 # Создаем класс с возможными состояниями
 class Form(StatesGroup):
 	waiting_for_your_name = State()
+	wait = State()
 
 @dp.message_handler(commands=['start', 'help', 'начать', 'сертификат'])
 async def send_welcome(message: types.Message):
@@ -65,7 +66,7 @@ async def send_welcome(message: types.Message):
 # На всякий случай
 @dp.message_handler(Text(equals=['start', 'help', 'начать', 'сертификат']))
 async def send_welcome(message: types.Message):
-	message_start = template_message_start.substitute(name=message.from_user.first_name)
+	message_start = template_message_start.substitute(name=message.from_user.first_name) 
 	await message.reply(message_start, reply_markup=keyboard)
 
 @dp.message_handler(Text(equals="Хочу сертификат"))
@@ -96,6 +97,7 @@ async def enter_your_name(message: types.Message, state: FSMContext):
 async def user_answered_yes(callback_query: types.CallbackQuery, state: FSMContext):
 	# Сделать анти DDOS
 	await bot.answer_callback_query(callback_query.id)
+	await Form.wait.set()
 	await main_algorithm(state, callback_query)
 
 # Если человек скажет, что фамилия просклонялась не правильно
@@ -121,7 +123,7 @@ async def main_algorithm(state, instance):
 
 	UID = uuid.uuid4().hex # Уникальный идентификатор для ID сертификата
 
-	file = await sync_to_async(PPTX_GENERATOR)(user_name, UID, today_date)  # Фрмирование pptx документа из шаблона (ФИО, ID, дата)
+	file = await sync_to_async(PPTX_GENERATOR)(user_name, UID, today_date)  # Формирование pptx документа из шаблона (ФИО, ID, дата)
 
 	pptx_to_pdf(file, today_date)
 
@@ -151,6 +153,8 @@ async def main_algorithm(state, instance):
 	users_list = [UID, user_name, today_date, now_time.strftime("%H:%M:%S"), "Telegram", instance.from_user.username, instance.from_user.id]
 	cursor.execute("INSERT INTO users VALUES(?,?,?,?,?,?,?);", users_list)
 	connect.commit()
+	
+	await Form.waiting_for_your_name.set()
 
 	# Заканчиваем диалог с пользователем
 	await state.finish()
