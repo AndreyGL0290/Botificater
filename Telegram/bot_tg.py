@@ -32,6 +32,9 @@ from string import Template
 # Работа с асинхронностью
 from asgiref.sync import sync_to_async
 
+# Замер времени
+from time import perf_counter
+
 # Токен, который берется из settings.py (дается при создании бота в BotFather)
 API_TOKEN = TOKEN
 
@@ -56,6 +59,7 @@ template_message_start = Template("Привет, $name!\n👋🏼😀\nЯ Ква
 # Создаем класс с возможными состояниями
 class Form(StatesGroup):
 	waiting_for_your_name = State()
+	wait_for_proof = State()
 	wait = State()
 
 @dp.message_handler(commands=['start', 'help', 'начать', 'сертификат'])
@@ -91,17 +95,19 @@ async def enter_your_name(message: types.Message, state: FSMContext):
 	inline_btn_no = InlineKeyboardButton('Нет', callback_data='Нет')
 	inline_kb = InlineKeyboardMarkup().add(inline_btn_yes, inline_btn_no)
 	await message.answer(f"Сертификат будет выдан {cased_user_name}\nВсё ли правильно?", reply_markup=inline_kb)
+	await Form.wait_for_proof.set()
 
 # Если человек скажет что фамилия просклонялась правильно
-@dp.callback_query_handler(lambda c: c.data == "Да", state=Form.waiting_for_your_name)
+@dp.callback_query_handler(lambda c: c.data == "Да", state=Form.wait_for_proof)
 async def user_answered_yes(callback_query: types.CallbackQuery, state: FSMContext):
 	# Сделать анти DDOS
 	await bot.answer_callback_query(callback_query.id)
+	await bot.send_message(callback_query.from_user.id, "Ваш сертификат создается")
 	await Form.wait.set()
 	await main_algorithm(state, callback_query)
 
 # Если человек скажет, что фамилия просклонялась не правильно
-@dp.callback_query_handler(lambda c: c.data == "Нет", state=Form.waiting_for_your_name)
+@dp.callback_query_handler(lambda c: c.data == "Нет", state=Form.wait_for_proof)
 async def user_answered_no(callback_query: types.CallbackQuery, state: FSMContext):
 	await bot.answer_callback_query(callback_query.id)
 	await bot.send_message(callback_query.from_user.id, "Как будет правильно?")
@@ -110,6 +116,7 @@ async def user_answered_no(callback_query: types.CallbackQuery, state: FSMContex
 
 async def main_algorithm(state, instance):
 	# Если перешли в алгоритм из ветки ДА
+	time1 = perf_counter()
 	try:
 		data = await state.get_data()
 		user_name = data["name"]
@@ -128,14 +135,12 @@ async def main_algorithm(state, instance):
 	pptx_to_pdf(file, today_date)
 
 	with open('./GENERATED_PDF/' + today_date + '/' + file + ".pdf", 'rb') as doc: # Берём файл
-		# Отправка файла из ветки ДА
+		# Отправка файла пользователю
 		if type(instance) == types.CallbackQuery:
 			await bot.answer_callback_query(instance.id)
-			await bot.send_document(instance.from_user.id, doc) # Отправляем его пользователю
-		# Отправка файла из ветки НЕТ
-		else:
-			await instance.answer_document(document=doc) # Отправляем его пользователю
-
+			await bot.send_document(instance.from_user.id, doc, reply_markup=keyboard) # Отправляем его пользователю
+			time2 = perf_counter()
+	print('Finished in ', time2-time1, ' second(s)')
 	# Работа с БД
 	connect = sqlite3.connect('users.db')
 	cursor = connect.cursor()

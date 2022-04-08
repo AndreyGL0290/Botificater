@@ -2,7 +2,7 @@ from pptx import Presentation
 import os
 
 def PPTX_GENERATOR(name, UID, today_date):
-    prs = Presentation('Certificate_Template.pptx') 
+    prs = Presentation('Certificate_Template1.pptx') 
     for shape in prs.slides[0].shapes:  # перебираем объекты на слайде
         if (shape.has_text_frame):
             if(shape.text_frame.text == 'Name'):  # ищим поле где написано Name
