@@ -1,19 +1,19 @@
-# В файле settings.py хранятся переменные
-# VK_TOKEN и WEATHER_TOKEN
+### Misc ###
+# All secret variables are stored in settings.py
 settings.py
 
-# Базу не выгружаем
+# DB
 users.db
 
 GENERATED_PDF/
 GENERATED_PPTX/
 
-# PowerPoint временно
+# PowerPoint Files
 ~$*.pptx*
 ~$*.ppt*
 
-# Created by https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,windows
-# Edit at https://www.toptal.com/developers/gitignore?templates=python,visualstudiocode,windows
+# Documentation
+Docs
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
